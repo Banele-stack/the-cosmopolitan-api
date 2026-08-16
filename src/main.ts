@@ -27,7 +27,17 @@ async function bootstrap() {
 
  // Serve static files using Express directly
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+  expressApp.use(
+    '/uploads',
+    express.static(join(__dirname, '..', 'uploads'), {
+      // Uploaded filenames are unique per-upload (see the diskStorage
+      // filename functions), so a given URL's bytes never change — safe to
+      // let the phone cache it for a year instead of re-fetching the same
+      // photo on every visit.
+      maxAge: '365d',
+      immutable: true,
+    }),
+  );
 
   await app.listen(process.env.PORT ?? 3000);
 }

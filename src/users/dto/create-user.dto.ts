@@ -4,4 +4,6 @@ export class CreateUserDto {
   email?: string;
   phoneNumber?: string;
   password: string;
+  socialLink?: string;
+  tiktokUrl?: string;
 }

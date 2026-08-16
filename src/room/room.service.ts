@@ -14,6 +14,7 @@ import {
   notifyAdminListingNeedsReview,
   notifyAdminReviewNeedsApproval,
 } from 'src/common/notifications/admin-notify.helper';
+import { DEFAULT_TIKTOK_URL } from 'src/common/social/social.constants';
 
 // Mirrors the price buckets used by the "filter" query param in findAll(),
 // so near-duplicate detection groups listings the same way search does.
@@ -36,6 +37,11 @@ function withOwnerVerified(room: Room) {
     reviews: (reviews ?? []).filter((r) => r.status === "approved"),
     ownerId: owner?.id,
     ownerVerified: Boolean(owner?.phoneVerified),
+    ownerTiktokUrl: owner?.tiktokUrl || DEFAULT_TIKTOK_URL,
+    // Facebook, LinkedIn, or whatever else the owner put in their profile —
+    // unlike TikTok, there's no platform-wide fallback for this one, so it
+    // just doesn't render (see SocialLinkButton) when unset.
+    ownerSocialUrl: owner?.socialLink || undefined,
   };
 }
 

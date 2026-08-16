@@ -38,6 +38,16 @@ export class User {
   @Column()
   passwordHash: string;
 
+  // Facebook, LinkedIn, or any other profile link the user wants to share.
+  @Column({ nullable: true })
+  socialLink?: string;
+
+  // This owner's TikTok profile — shown on every listing/room they create.
+  // Nullable so a real value can be added later without a migration; until
+  // then, DEFAULT_TIKTOK_URL fills in for display (see social.constants.ts).
+  @Column({ nullable: true })
+  tiktokUrl?: string;
+
   @Column({ default: "user" })
   role: "user" | "admin";
 

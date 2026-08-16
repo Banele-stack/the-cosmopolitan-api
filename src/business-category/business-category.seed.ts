@@ -17,11 +17,14 @@ export interface BusinessCategorySeedEntry {
 // rows — including ones not listed here — are never renamed or removed.
 //
 // Ordering (both the category list and each category's own subcategory
-// list) is deliberately township/local-economy-first: everyday informal
-// trade and daily-need services lead, formal/occasional/online-only
-// services trail. "Other" always stays last as a catch-all. Transport &
-// Hire and Rentals & Equipment Hire are kept adjacent (hiring/equipment is
-// one conceptual group).
+// list): Events, Beauty, and Food lead as the highest-intent, most-browsed
+// categories, so they're what a user sees first without scrolling or
+// expanding "more". After those three, the rest stays
+// township/local-economy-first as before: everyday informal trade and
+// daily-need services lead, formal/occasional/online-only services trail.
+// "Other" always stays last as a catch-all. Transport & Hire and Rentals &
+// Equipment Hire are kept adjacent (hiring/equipment is one conceptual
+// group).
 //
 // Each subcategory should describe exactly one thing, once, in whichever
 // category is its most natural home. In particular: don't add an
@@ -33,7 +36,7 @@ export const BUSINESS_CATEGORY_SEED: BusinessCategorySeedEntry[] = [
   {
     name: 'Street & Township Traders',
     slug: 'street-and-township-traders',
-    sortOrder: 0,
+    sortOrder: 3,
     subcategories: [
       { name: 'Spaza Shop', slug: 'spaza-shop', sortOrder: 0 },
       {
@@ -72,7 +75,7 @@ export const BUSINESS_CATEGORY_SEED: BusinessCategorySeedEntry[] = [
   {
     name: 'Food',
     slug: 'food',
-    sortOrder: 1,
+    sortOrder: 2,
     subcategories: [
       { name: 'Kota & Shisanyama', slug: 'kota-shisanyama', sortOrder: 0 },
       {
@@ -98,7 +101,7 @@ export const BUSINESS_CATEGORY_SEED: BusinessCategorySeedEntry[] = [
   {
     name: 'Beauty',
     slug: 'beauty',
-    sortOrder: 2,
+    sortOrder: 1,
     subcategories: [
       { name: 'Hair Salon', slug: 'hair-salon', sortOrder: 0 },
       { name: 'Barber', slug: 'barber', sortOrder: 1 },
@@ -117,7 +120,7 @@ export const BUSINESS_CATEGORY_SEED: BusinessCategorySeedEntry[] = [
   {
     name: 'Events',
     slug: 'events',
-    sortOrder: 3,
+    sortOrder: 0,
     subcategories: [
       { name: 'DJs', slug: 'djs', sortOrder: 0 },
       { name: 'Sound Equipment', slug: 'sound-equipment', sortOrder: 1 },

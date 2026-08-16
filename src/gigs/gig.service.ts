@@ -13,6 +13,7 @@ import { User } from "src/users/entities/user.entity";
 import { BusinessCategoryService } from "src/business-category/business-category.service";
 import { parsePaginationParams, paginate } from "src/common/pagination/pagination.util";
 import { haversineKmExpr, resolveNearbyRadius, NearbyMeta } from "src/common/geo/geo.util";
+import { DEFAULT_TIKTOK_URL } from "src/common/social/social.constants";
 
 // How long a post stays visible after creation, based on how urgent the
 // poster said it was — the mechanism that keeps the board fresh without a
@@ -37,6 +38,11 @@ function withOwnerVerified(gig: Gig) {
     ...rest,
     ownerId: owner?.id,
     ownerVerified: Boolean(owner?.phoneVerified),
+    // Same social-link exposure Room/Business already have — gigs were
+    // missing both, so a poster's TikTok/Facebook never showed up here
+    // even when they'd set one.
+    ownerTiktokUrl: owner?.tiktokUrl || DEFAULT_TIKTOK_URL,
+    ownerSocialUrl: owner?.socialLink || undefined,
   };
 }
 

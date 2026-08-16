@@ -70,6 +70,8 @@ async signup(dto: {
   email?: string;
   phoneNumber?: string;
   password: string;
+  socialLink?: string;
+  tiktokUrl?: string;
 }) {
   if (!dto.email && !dto.phoneNumber) {
     throw new BadRequestException(
@@ -109,6 +111,8 @@ async signup(dto: {
     email: dto.email,
     phoneNumber: dto.phoneNumber,
     password: passwordHash,
+    socialLink: dto.socialLink,
+    tiktokUrl: dto.tiktokUrl,
   });
 
   const token = this.jwtService.sign({

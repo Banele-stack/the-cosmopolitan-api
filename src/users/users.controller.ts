@@ -23,6 +23,8 @@ async getProfile(@Req() req) {
     phoneNumber: user.phoneNumber,
     emailVerified: user.emailVerified,
     phoneVerified: user.phoneVerified,
+    socialLink: user.socialLink,
+    tiktokUrl: user.tiktokUrl,
     role: user.role,
     createdAt: user.createdAt,
   };
@@ -40,6 +42,8 @@ async updateProfile(@Req() req, @Body() dto: UpdateProfileDto) {
   const user = await this.usersService.update(req.user.sub, {
     firstName: dto.firstName?.trim() || undefined,
     surname: dto.surname?.trim() || undefined,
+    socialLink: dto.socialLink?.trim() || undefined,
+    tiktokUrl: dto.tiktokUrl?.trim() || undefined,
   });
 
   return {
@@ -50,6 +54,8 @@ async updateProfile(@Req() req, @Body() dto: UpdateProfileDto) {
     phoneNumber: user.phoneNumber,
     emailVerified: user.emailVerified,
     phoneVerified: user.phoneVerified,
+    socialLink: user.socialLink,
+    tiktokUrl: user.tiktokUrl,
     role: user.role,
     createdAt: user.createdAt,
   };

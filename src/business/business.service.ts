@@ -10,6 +10,7 @@ import { BusinessCategoryService } from "src/business-category/business-category
 import { parsePaginationParams, paginate } from "src/common/pagination/pagination.util";
 import { haversineKmExpr, resolveNearbyRadius, NearbyMeta } from "src/common/geo/geo.util";
 import { notifyAdminListingNeedsReview } from "src/common/notifications/admin-notify.helper";
+import { DEFAULT_TIKTOK_URL } from "src/common/social/social.constants";
 
 // Exposes only whether the owner is verified, never their raw email/phone.
 // Phone-only, not email-or-phone: email verification is free and
@@ -23,6 +24,11 @@ function withOwnerVerified(business: Business) {
     ...rest,
     ownerId: owner?.id,
     ownerVerified: Boolean(owner?.phoneVerified),
+    ownerTiktokUrl: owner?.tiktokUrl || DEFAULT_TIKTOK_URL,
+    // Facebook, LinkedIn, or whatever else the owner put in their profile —
+    // unlike TikTok, there's no platform-wide fallback for this one, so it
+    // just doesn't render (see SocialLinkButton) when unset.
+    ownerSocialUrl: owner?.socialLink || undefined,
   };
 }
 

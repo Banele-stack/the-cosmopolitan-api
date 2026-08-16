@@ -24,6 +24,7 @@ import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard";
 import { UploadHashService } from "src/uploads/upload-hash.service";
+import { compressImagesInPlace } from "src/uploads/image-resize.util";
 
 
 @Controller('business')
@@ -80,6 +81,12 @@ export class BusinessController {
     if (!files || files.length === 0) {
       throw new BadRequestException('No images provided');
     }
+
+    // Resize/recompress in place before anything downstream (the URL
+    // response, the dedup hash below) touches these files — this is what
+    // actually fixes slow/failing photo loads on mobile: uploads used to
+    // be served completely untouched, up to the full 5MB multer limit.
+    await compressImagesInPlace(files.map((file) => file.path));
 
     // Generate URLs for the uploaded files
     const imageUrls = files.map((file) => {

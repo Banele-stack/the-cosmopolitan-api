@@ -29,6 +29,8 @@ export class UsersService {
   email: dto.email,
   phoneNumber: dto.phoneNumber,
   passwordHash: dto.password,
+  socialLink: dto.socialLink,
+  tiktokUrl: dto.tiktokUrl,
 });
 
   return this.usersRepository.save(user);
