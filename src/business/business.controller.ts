@@ -14,7 +14,9 @@ import {
   UploadedFiles,
   BadRequestException,
   Query,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { diskStorage } from 'multer';
@@ -181,6 +183,26 @@ findAll(
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.businessService.findOne(+id);
+  }
+
+  // Public, unauthenticated — same visibility as the listing itself.
+  // Streams a live Google Places photo server-side (never exposes the API
+  // key to the client) for a listing with no photos of its own; 404s if
+  // Google has nothing or the feature isn't configured, so the frontend's
+  // <img onError> just falls back to the category placeholder.
+  @Get(':id/photo')
+  async getPhoto(@Param('id') id: string, @Res() res: Response) {
+    const photo = await this.businessService.getGooglePhotoBytes(+id);
+    if (!photo) {
+      res.status(404).end();
+      return;
+    }
+    res.setHeader('Content-Type', photo.contentType);
+    // Repeat views (same browser) skip the round trip entirely for a day —
+    // keeps cost down without caching so long that a listing that gains a
+    // Google presence stays stuck on a stale/missing result.
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(photo.body);
   }
 
   @Patch(':id')

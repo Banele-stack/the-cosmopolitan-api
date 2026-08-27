@@ -105,4 +105,19 @@ owner: User;
 
   @Column("json")
   operatingHours: OperatingHours;
+
+  // Cache for the live Google Places photo lookup (see
+  // GooglePlacesService) — used only when this listing has no photos of
+  // its own. googlePhotoRef stays null both before the first lookup AND
+  // after a lookup that found nothing; googlePhotoCheckedAt disambiguates
+  // those (null = never checked), and gates how often we re-run the
+  // lookup rather than re-querying Google on every page view.
+  @Column({ nullable: true })
+  googlePlaceId: string | null;
+
+  @Column({ nullable: true })
+  googlePhotoRef: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  googlePhotoCheckedAt: Date | null;
 }

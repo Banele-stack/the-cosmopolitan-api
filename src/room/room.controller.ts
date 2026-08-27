@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UsePipes, ValidationPipe, Req, UseInterceptors, BadRequestException, UploadedFiles, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UsePipes, ValidationPipe, Req, UseInterceptors, BadRequestException, UploadedFiles, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { RoomService } from './room.service';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -154,6 +155,20 @@ findAll(
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.roomService.findOne(+id);
+  }
+
+  // See BusinessController's identical /business/:id/photo for why this
+  // streams server-side rather than exposing a Google-hosted URL directly.
+  @Get(':id/photo')
+  async getPhoto(@Param('id') id: string, @Res() res: Response) {
+    const photo = await this.roomService.getGooglePhotoBytes(+id);
+    if (!photo) {
+      res.status(404).end();
+      return;
+    }
+    res.setHeader('Content-Type', photo.contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(photo.body);
   }
 
   @UseGuards(JwtAuthGuard)

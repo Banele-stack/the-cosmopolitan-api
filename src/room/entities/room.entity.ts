@@ -47,8 +47,13 @@ location: {
   @Column()
   bedrooms: number;
 
-  @Column()
-  bathrooms: number;
+  // Nullable — some real listings (e.g. sourced from a landlord's own
+  // published info rather than a self-serve form) don't state this. The
+  // frontend shows "Contact landlord for details" rather than blocking the
+  // whole listing on one missing field. See availableFrom/deposit/leaseTerm
+  // below for the same reasoning.
+  @Column({ nullable: true })
+  bathrooms: number | null;
 
   // Nullable — most people renting out a room don't know its exact m²,
   // so it's asked for but never required (see CreateRoomDto).
@@ -115,14 +120,15 @@ location: {
   @Column()
   propertyType: string;
 
-  @Column({ type: 'date' })
-  availableFrom: Date;
+  // Nullable — see bathrooms above.
+  @Column({ type: 'date', nullable: true })
+  availableFrom: Date | null;
 
-  @Column('decimal')
-  deposit: number;
+  @Column('decimal', { nullable: true })
+  deposit: number | null;
 
-  @Column()
-  leaseTerm: string;
+  @Column({ nullable: true })
+  leaseTerm: string | null;
 
   @Column('float', { default: 0 })
   rating: number;
@@ -153,4 +159,16 @@ location: {
 
   @Column('json', { nullable: true })
   reviews?: RoomReview[];
+
+  // Cache for the live Google Places photo lookup (see
+  // GooglePlacesService / business.entity.ts's identical fields) — used
+  // only when this listing has no photos of its own.
+  @Column({ nullable: true })
+  googlePlaceId: string | null;
+
+  @Column({ nullable: true })
+  googlePhotoRef: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  googlePhotoCheckedAt: Date | null;
 }

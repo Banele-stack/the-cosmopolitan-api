@@ -11,6 +11,13 @@ import { parsePaginationParams, paginate } from "src/common/pagination/paginatio
 import { haversineKmExpr, resolveNearbyRadius, NearbyMeta } from "src/common/geo/geo.util";
 import { notifyAdminListingNeedsReview } from "src/common/notifications/admin-notify.helper";
 import { DEFAULT_TIKTOK_URL } from "src/common/social/social.constants";
+import { GooglePlacesService } from "src/common/google-places/google-places.service";
+
+// How long a resolved (or confirmed-absent) Google photo reference is
+// trusted before re-querying Places — bounds cost (no repeat Text Search
+// per view) without caching so long that a listing that gets a Google
+// presence later stays photo-less indefinitely.
+const GOOGLE_PHOTO_CACHE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // Exposes only whether the owner is verified, never their raw email/phone.
 // Phone-only, not email-or-phone: email verification is free and
@@ -42,6 +49,7 @@ export class BusinessService {
     private readonly userRepository: Repository<User>,
 
     private readonly businessCategoryService: BusinessCategoryService,
+    private readonly googlePlacesService: GooglePlacesService,
   ) {}
 
  async create(
@@ -471,6 +479,40 @@ async findAll(
   // not security-critical" tolerance as the isOwner checks elsewhere.
   async recordView(id: number) {
     await this.businessRepository.increment({ id }, "viewCount", 1);
+  }
+
+  // Live Google Places photo for a listing that has none of its own —
+  // returns raw image bytes for the controller to stream, or null (caller
+  // 404s, frontend falls back to the category placeholder). Only ever
+  // called for listings whose own `images` is empty; a business with real
+  // uploaded photos never touches this path. Entirely inert — resolves to
+  // null immediately, no external calls — when GOOGLE_PLACES_API_KEY isn't
+  // configured (see GooglePlacesService).
+  async getGooglePhotoBytes(id: number): Promise<{ body: Buffer; contentType: string } | null> {
+    if (!this.googlePlacesService.isConfigured) return null;
+
+    const business = await this.findOneRaw(id);
+    if (business.images.length > 0) return null;
+
+    const isStale =
+      !business.googlePhotoCheckedAt ||
+      Date.now() - business.googlePhotoCheckedAt.getTime() > GOOGLE_PHOTO_CACHE_MS;
+
+    if (isStale) {
+      const result = await this.googlePlacesService.findPlacePhoto({
+        name: business.name,
+        address: business.location?.address ?? business.location?.area ?? null,
+        lat: business.location?.lat ?? null,
+        lng: business.location?.lng ?? null,
+      });
+      business.googlePlaceId = result.placeId;
+      business.googlePhotoRef = result.photoName;
+      business.googlePhotoCheckedAt = new Date();
+      await this.businessRepository.save(business);
+    }
+
+    if (!business.googlePhotoRef) return null;
+    return this.googlePlacesService.fetchPhotoBytes(business.googlePhotoRef);
   }
 
   async recordContactClick(id: number) {

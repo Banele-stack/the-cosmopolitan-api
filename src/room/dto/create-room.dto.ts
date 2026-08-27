@@ -77,21 +77,29 @@ export class CreateRoomDto {
   @IsNumber()
   bedrooms: number;
 
+  // bathrooms/availableFrom/deposit/leaseTerm are optional — a real
+  // listing sourced from a landlord's own published info doesn't always
+  // state all of these. The frontend shows "Contact landlord for details"
+  // rather than requiring the whole listing to wait on one missing field.
+  @IsOptional()
   @IsNumber()
-  bathrooms: number;
+  bathrooms?: number;
 
   @IsOptional()
   @IsNumber()
   size?: number;
 
+  @IsOptional()
   @IsDateString()
-  availableFrom: Date;
+  availableFrom?: Date;
 
+  @IsOptional()
   @IsNumber()
-  deposit: number;
+  deposit?: number;
 
+  @IsOptional()
   @IsString()
-  leaseTerm: string;
+  leaseTerm?: string;
 
   @ValidateNested()
   @Type(() => AmenitiesDto)

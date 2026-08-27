@@ -9,12 +9,14 @@ import { BusinessCategoryModule } from 'src/business-category/business-category.
 import { BusinessCategory } from 'src/business-category/entities/business-category.entity';
 import { BusinessSubcategory } from 'src/business-category/entities/business-subcategory.entity';
 import { UploadsModule } from 'src/uploads/uploads.module';
+import { GooglePlacesModule } from 'src/common/google-places/google-places.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Business, User, BusinessCategory, BusinessSubcategory]),
     BusinessCategoryModule,
     UploadsModule,
+    GooglePlacesModule,
     // Caps new-listing creation specifically (not browsing) — the
     // duplicate-listing checks in BusinessService catch a bot resubmitting
     // the same listing, but not one grinding out many different fake ones;

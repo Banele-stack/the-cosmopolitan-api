@@ -15,6 +15,10 @@ import {
   notifyAdminReviewNeedsApproval,
 } from 'src/common/notifications/admin-notify.helper';
 import { DEFAULT_TIKTOK_URL } from 'src/common/social/social.constants';
+import { GooglePlacesService } from 'src/common/google-places/google-places.service';
+
+// See business.service.ts's identical constant for why.
+const GOOGLE_PHOTO_CACHE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // Mirrors the price buckets used by the "filter" query param in findAll(),
 // so near-duplicate detection groups listings the same way search does.
@@ -53,6 +57,8 @@ export class RoomService {
 
     @InjectRepository(User)
         private readonly userRepository: Repository<User>,
+
+    private readonly googlePlacesService: GooglePlacesService,
   ) {}
 
 // room.service.ts
@@ -191,7 +197,13 @@ async findAll(
     const query =
       this.roomRepository.createQueryBuilder("room")
         .leftJoinAndSelect("room.owner", "owner")
-        .andWhere("room.status = 'active'");
+        .andWhere("room.status = 'active'")
+        // Unlike businesses (which degrade gracefully to a text-only card
+        // when photo-less), a room/apartment with no photos is excluded
+        // from public listings entirely rather than shown without one.
+        // `images` is a `simple-array` column, stored as a comma-joined
+        // string, so an empty array persists as ''.
+        .andWhere("room.images IS NOT NULL AND room.images != ''");
 
     // Area filter
     if (
@@ -394,6 +406,35 @@ async findAll(
     }
 
     return room;
+  }
+
+  // Live Google Places photo for a listing with no photos of its own — see
+  // BusinessService.getGooglePhotoBytes's identical logic/reasoning.
+  async getGooglePhotoBytes(id: number): Promise<{ body: Buffer; contentType: string } | null> {
+    if (!this.googlePlacesService.isConfigured) return null;
+
+    const room = await this.findOneRaw(id);
+    if (room.images.length > 0) return null;
+
+    const isStale =
+      !room.googlePhotoCheckedAt ||
+      Date.now() - room.googlePhotoCheckedAt.getTime() > GOOGLE_PHOTO_CACHE_MS;
+
+    if (isStale) {
+      const result = await this.googlePlacesService.findPlacePhoto({
+        name: room.name,
+        address: room.location?.address ?? room.location?.area ?? null,
+        lat: room.location?.lat ?? null,
+        lng: room.location?.lng ?? null,
+      });
+      room.googlePlaceId = result.placeId;
+      room.googlePhotoRef = result.photoName;
+      room.googlePhotoCheckedAt = new Date();
+      await this.roomRepository.save(room);
+    }
+
+    if (!room.googlePhotoRef) return null;
+    return this.googlePlacesService.fetchPhotoBytes(room.googlePhotoRef);
   }
 
   async update(id: number, updateRoomDto: UpdateRoomDto, userId: number) {
