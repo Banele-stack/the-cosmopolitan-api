@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { createHash } from "crypto";
-import { readFileSync } from "fs";
 import { UploadedImageHash } from "./entities/uploaded-image-hash.entity";
 
 @Injectable()
@@ -13,15 +12,13 @@ export class UploadHashService {
   ) {}
 
   async recordAndCheck(
-    files: { path: string; url: string }[],
+    files: { buffer: Buffer; url: string }[],
     uploaderId: number,
   ): Promise<string[]> {
     const duplicateWarnings: string[] = [];
 
     for (const file of files) {
-      const hash = createHash("sha256")
-        .update(readFileSync(file.path))
-        .digest("hex");
+      const hash = createHash("sha256").update(file.buffer).digest("hex");
 
       const existing = await this.hashRepository.findOne({
         where: { hash },

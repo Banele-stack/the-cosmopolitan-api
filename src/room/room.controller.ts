@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UsePipes, ValidationPipe, Req, UseInterceptors, BadRequestException, UploadedFiles, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UsePipes, ValidationPipe, Req, UseInterceptors, BadRequestException, UploadedFiles, Query, Res, Inject } from '@nestjs/common';
 import { Response } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { RoomService } from './room.service';
@@ -7,10 +7,11 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express/multer';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { extname } from 'path';
 import { UploadHashService } from 'src/uploads/upload-hash.service';
-import { compressImagesInPlace } from 'src/uploads/image-resize.util';
+import { compressImageBuffer } from 'src/uploads/image-resize.util';
+import { UPLOAD_STORAGE, UploadStorage } from 'src/uploads/storage/storage.interface';
 
 // Without this, CreateRoomDto/UpdateRoomDto's class-validator decorators
 // (including the required phoneNumber added for the contact-number fix)
@@ -22,6 +23,7 @@ export class RoomController {
   constructor(
     private readonly roomService: RoomService,
     private readonly uploadHashService: UploadHashService,
+    @Inject(UPLOAD_STORAGE) private readonly storage: UploadStorage,
   ) {}
 
 @UseGuards(JwtAuthGuard, ThrottlerGuard)
@@ -37,14 +39,10 @@ export class RoomController {
   @Post('upload')
   @UseInterceptors(
     FilesInterceptor('images', 10, {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-        },
-      }),
+      // Holds the file in memory instead of writing it to disk first — the
+      // storage backend (local disk or S3, see UploadsModule) decides where
+      // it ends up, so multer's job here is just to buffer the upload.
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
         if (!allowedTypes.includes(file.mimetype)) {
@@ -65,21 +63,25 @@ export class RoomController {
       throw new BadRequestException('No images provided');
     }
 
-    // Resize/recompress in place before anything downstream (the URL
-    // response, the dedup hash below) touches these files — this is what
-    // actually fixes slow/failing photo loads on mobile: uploads used to
-    // be served completely untouched, up to the full 5MB multer limit.
-    await compressImagesInPlace(files.map((file) => file.path));
+    // Resize/recompress before anything downstream (the URL response, the
+    // dedup hash below) touches these bytes — this is what actually fixes
+    // slow/failing photo loads on mobile: uploads used to be stored
+    // completely untouched, up to the full 5MB multer limit. Then hand the
+    // result to whichever storage backend is active (local disk or S3).
+    const saved = await Promise.all(
+      files.map(async (file) => {
+        const compressed = await compressImageBuffer(file.buffer, file.mimetype);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const filename = `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`;
+        const url = await this.storage.save(compressed, filename, file.mimetype);
+        return { buffer: compressed, url };
+      }),
+    );
 
-    // Generate URLs for the uploaded files
-    const imageUrls = files.map((file) => {
-      // Return the URL path to access the image
-      // Adjust this based on your static file serving configuration
-      return `/uploads/${file.filename}`;
-    });
+    const imageUrls = saved.map((file) => file.url);
 
     const duplicateWarnings = await this.uploadHashService.recordAndCheck(
-      files.map((file, i) => ({ path: file.path, url: imageUrls[i] })),
+      saved.map((file) => ({ buffer: file.buffer, url: file.url })),
       req.user.sub,
     );
 
@@ -90,14 +92,7 @@ export class RoomController {
   @Post('upload-videos')
   @UseInterceptors(
     FilesInterceptor('videos', 3, {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-        },
-      }),
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         const allowedTypes = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo', 'video/3gpp'];
         if (!allowedTypes.includes(file.mimetype)) {
@@ -110,16 +105,20 @@ export class RoomController {
       },
     }),
   )
-  uploadVideos(
+  async uploadVideos(
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     if (!files || files.length === 0) {
       throw new BadRequestException('No videos provided');
     }
 
-    const videoUrls = files.map((file) => {
-      return `/uploads/${file.filename}`;
-    });
+    const videoUrls = await Promise.all(
+      files.map((file) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const filename = `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`;
+        return this.storage.save(file.buffer, filename, file.mimetype);
+      }),
+    );
 
     return { videoUrls };
   }

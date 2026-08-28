@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { RoomController } from './room.controller';
 import { RoomService } from './room.service';
 import { UploadHashService } from 'src/uploads/upload-hash.service';
+import { UPLOAD_STORAGE } from 'src/uploads/storage/storage.interface';
 
 describe('RoomController', () => {
   let controller: RoomController;
@@ -18,6 +20,10 @@ describe('RoomController', () => {
     recordAndCheck: jest.fn(),
   };
 
+  const mockUploadStorage = {
+    save: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -32,8 +38,19 @@ describe('RoomController', () => {
           provide: UploadHashService,
           useValue: mockUploadHashService,
         },
+        {
+          provide: UPLOAD_STORAGE,
+          useValue: mockUploadStorage,
+        },
       ],
-    }).compile();
+    })
+      // create()/addReview() are guarded by ThrottlerGuard, which needs the
+      // real ThrottlerModule wired up to resolve its options/storage — not
+      // relevant to what these tests actually exercise, so it's swapped
+      // for a stub that always allows the request through.
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<RoomController>(RoomController);
   });

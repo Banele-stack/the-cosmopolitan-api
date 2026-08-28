@@ -1,6 +1,3 @@
-import { promises as fs } from "fs";
-import { randomBytes } from "crypto";
-
 // Neither `import sharp from "sharp"` (this tsconfig has `esModuleInterop`
 // off, so that resolves to a `.default` that doesn't exist at runtime) nor
 // `import sharp = require("sharp")` (this sharp version's shipped types
@@ -9,7 +6,7 @@ import { randomBytes } from "crypto";
 // checks correctly here. A plain runtime require sidesteps the mismatch —
 // the actual Node require of "sharp" is unaffected either way.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const sharp = require("sharp") as (input: string) => {
+const sharp = require("sharp") as (input: Buffer) => {
   metadata(): Promise<{ format?: string }>;
   resize(opts: { width: number; withoutEnlargement: boolean }): any;
 };
@@ -22,17 +19,20 @@ const sharp = require("sharp") as (input: string) => {
 // a full-resolution phone-camera JPEG easily hits several MB.
 const MAX_WIDTH = 1600;
 
-// Resizes and re-compresses an already-saved upload in place, keeping its
-// original format and filename/path — so nothing downstream (the stored
-// URL, the dedup hash check that reads the same path afterward) needs to
-// change. GIFs are skipped: re-encoding through this single-frame pipeline
-// would silently strip their animation.
-export async function compressImageInPlace(path: string): Promise<void> {
-  const image = sharp(path);
+// Resizes and re-compresses an in-memory upload, keeping its original
+// format. Operates on buffers (not a saved-to-disk path) so it works the
+// same way regardless of which UploadStorage ends up persisting the
+// result — local disk or S3. GIFs are skipped: re-encoding through this
+// single-frame pipeline would silently strip their animation.
+export async function compressImageBuffer(
+  buffer: Buffer,
+  mimetype: string,
+): Promise<Buffer> {
+  const image = sharp(buffer);
   const metadata = await image.metadata();
 
-  if (metadata.format === "gif") {
-    return;
+  if (metadata.format === "gif" || mimetype === "image/gif") {
+    return buffer;
   }
 
   let pipeline = image.resize({
@@ -56,23 +56,13 @@ export async function compressImageInPlace(path: string): Promise<void> {
     pipeline = pipeline.jpeg({ quality: 80, mozjpeg: true });
   }
 
-  const buffer = await pipeline.toBuffer();
-
-  // NOT fs.writeFile(path, buffer) directly: on Windows, sharp/libvips can
-  // still hold the source file open when toBuffer() resolves, and opening
-  // the same path for writing then fails with EBUSY/UNKNOWN — reliably
-  // reproduced during testing on every jpeg in the seed data. Writing to a
-  // throwaway path and renaming over the original sidesteps that (and is
-  // the standard fix — see sharp's own "can I overwrite the input file"
-  // guidance), with the same behavior as a bonus: the file never exists in
-  // a half-written state at its real path.
-  const tmpPath = `${path}.${randomBytes(6).toString("hex")}.tmp`;
-  await fs.writeFile(tmpPath, buffer);
-  await fs.rename(tmpPath, path);
+  return pipeline.toBuffer();
 }
 
-export async function compressImagesInPlace(
-  paths: string[],
-): Promise<void> {
-  await Promise.all(paths.map((path) => compressImageInPlace(path)));
+export async function compressImageBuffers(
+  files: { buffer: Buffer; mimetype: string }[],
+): Promise<Buffer[]> {
+  return Promise.all(
+    files.map((f) => compressImageBuffer(f.buffer, f.mimetype)),
+  );
 }
