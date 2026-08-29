@@ -15,9 +15,9 @@ export async function sendVerificationEmail(
   });
 
   await transporter.sendMail({
-    from: `"Cosmopolitan" <${process.env.EMAIL_USERNAME}>`,
+    from: `"SouthSpot" <${process.env.EMAIL_USERNAME}>`,
     to: email,
-    subject: "Cosmopolitan Verification Code",
+    subject: "SouthSpot Verification Code",
     html: `
       <h2>Verify your account</h2>
 

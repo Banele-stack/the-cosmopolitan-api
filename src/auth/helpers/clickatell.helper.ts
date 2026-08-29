@@ -10,7 +10,7 @@ export async function sendSms(
     params: {
       apiKey: process.env.CLICKATELL_API_KEY,
       to: phoneNumber.replace("+", ""), // 27723255319
-      content: `Your Cosmopolitan verification code is ${code}`,
+      content: `Your SouthSpot verification code is ${code}`,
     },
   });
 

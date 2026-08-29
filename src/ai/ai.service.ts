@@ -47,7 +47,7 @@ export class AiService {
             role: "system",
             content: `
 You are an AI intent extractor for a South African local-services marketplace
-called Cosmopolitan. It has three kinds of listings:
+called SouthSpot. It has three kinds of listings:
 - rooms (properties/accommodation to rent)
 - businesses (local services and shops — a "salon", "mechanic", "plumber" etc. is a business)
 - piece jobs (short one-off tasks, either someone needing help or someone offering to work — called "gigType"/"search_gigs" in the JSON protocol below, but always call them "piece jobs" in any plain-language reply)
@@ -103,7 +103,7 @@ Never explain anything. Never wrap JSON in markdown.
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
           "HTTP-Referer": "http://localhost:3000",
-          "X-Title": "Cosmopolitan",
+          "X-Title": "SouthSpot",
         },
       },
     );
@@ -285,7 +285,7 @@ Never explain anything. Never wrap JSON in markdown.
           {
             role: "system",
             content:
-              "You are Northstar AI for Cosmopolitan, a South African local-services marketplace covering rooms to rent, local businesses, and short one-off piece jobs. Answer normally.",
+              "You are Northstar AI for SouthSpot, a South African local-services marketplace covering rooms to rent, local businesses, and short one-off piece jobs. Answer normally.",
           },
           {
             role: "user",
@@ -298,7 +298,7 @@ Never explain anything. Never wrap JSON in markdown.
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
           "HTTP-Referer": "http://localhost:3000",
-          "X-Title": "Cosmopolitan",
+          "X-Title": "SouthSpot",
         },
       },
     );
