@@ -15,9 +15,9 @@ export async function sendVerificationEmail(
   });
 
   await transporter.sendMail({
-    from: `"SouthSpot" <${process.env.EMAIL_USERNAME}>`,
+    from: `"Findza" <${process.env.EMAIL_USERNAME}>`,
     to: email,
-    subject: "SouthSpot Verification Code",
+    subject: "Findza Verification Code",
     html: `
       <h2>Verify your account</h2>
 

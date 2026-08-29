@@ -52,7 +52,7 @@ export async function notifyAdminListingNeedsReview({
   const reviewUrl = `${ADMIN_PAGE_URL}?tab=listings`;
 
   await getTransporter().sendMail({
-    from: `"SouthSpot" <${process.env.EMAIL_USERNAME}>`,
+    from: `"Findza" <${process.env.EMAIL_USERNAME}>`,
     to: ADMIN_EMAIL,
     subject: `Review needed: ${listingName}`,
     html: `
@@ -82,7 +82,7 @@ export async function notifyAdminReviewNeedsApproval({
   const reviewUrl = `${ADMIN_PAGE_URL}?tab=reviews`;
 
   await getTransporter().sendMail({
-    from: `"SouthSpot" <${process.env.EMAIL_USERNAME}>`,
+    from: `"Findza" <${process.env.EMAIL_USERNAME}>`,
     to: ADMIN_EMAIL,
     subject: `New review awaiting approval: ${roomName}`,
     html: `

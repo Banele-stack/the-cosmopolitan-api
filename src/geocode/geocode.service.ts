@@ -107,7 +107,7 @@ export class GeocodeService {
           headers: {
             // Nominatim's usage policy requires a real identifying
             // User-Agent for every request.
-            "User-Agent": "SouthSpotMarketplace/1.0 (https://cosmopolitan.co.za)",
+            "User-Agent": "FindzaMarketplace/1.0 (https://cosmopolitan.co.za)",
           },
           timeout: 5000,
         },
@@ -135,7 +135,7 @@ export class GeocodeService {
             addressdetails: 1,
           },
           headers: {
-            "User-Agent": "SouthSpotMarketplace/1.0 (https://cosmopolitan.co.za)",
+            "User-Agent": "FindzaMarketplace/1.0 (https://cosmopolitan.co.za)",
           },
           timeout: 5000,
         },
