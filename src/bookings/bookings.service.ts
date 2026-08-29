@@ -405,15 +405,15 @@ export class BookingsService {
 
     if (customer.phoneNumber) {
       const customerMsg = requiresApproval
-        ? `Cosmopolitan: Your booking request with ${business.name} for ${when} has been sent. You'll be notified once it's confirmed.`
-        : `Cosmopolitan: Your booking with ${business.name} for ${when} is confirmed.`;
+        ? `SouthSpot: Your booking request with ${business.name} for ${when} has been sent. You'll be notified once it's confirmed.`
+        : `SouthSpot: Your booking with ${business.name} for ${when} is confirmed.`;
       await this.sms.sendSms(customer.phoneNumber, customerMsg);
     }
 
     if (business.owner?.phoneNumber) {
       const ownerMsg = requiresApproval
-        ? `Cosmopolitan: New booking request from ${customer.firstName} ${customer.surname} for ${when}. Confirm it in your dashboard.`
-        : `Cosmopolitan: New booking from ${customer.firstName} ${customer.surname} for ${when}.`;
+        ? `SouthSpot: New booking request from ${customer.firstName} ${customer.surname} for ${when}. Confirm it in your dashboard.`
+        : `SouthSpot: New booking from ${customer.firstName} ${customer.surname} for ${when}.`;
       await this.sms.sendSms(business.owner.phoneNumber, ownerMsg);
     }
   }
@@ -489,12 +489,12 @@ export class BookingsService {
     if (changedByOwner && booking.customer.phoneNumber) {
       await this.sms.sendSms(
         booking.customer.phoneNumber,
-        `Cosmopolitan: Your booking for ${when} is now ${label}.`,
+        `SouthSpot: Your booking for ${when} is now ${label}.`,
       );
     } else if (!changedByOwner && booking.business.owner?.phoneNumber) {
       await this.sms.sendSms(
         booking.business.owner.phoneNumber,
-        `Cosmopolitan: A booking for ${when} is now ${label}.`,
+        `SouthSpot: A booking for ${when} is now ${label}.`,
       );
     }
   }
